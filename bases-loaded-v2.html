@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bases Loaded</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0e1019;
+  --bg-surface:#151722;
+  --bg-card:#1a1c2e;
+  --border:rgba(255,255,255,.06);
+  --text:#f0f0f0;
+  --gold:#e8a820;
+  --gold-bright:#f0a828;
+  --accent-soft:#d8c8a0;
+  --red:#c82040;
+  --red-bright:#e84060;
+  --green-status:#40c860;
+  --amber-status:#e8a820;
+  --muted:#5a6080;
+  --mono:'Share Tech Mono',monospace;
+}
+html,body{
+  width:100%;min-height:100vh;
+  font-family:'Rajdhani',sans-serif;font-weight:500;
+  background:var(--bg);color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;user-select:none;
+  overflow-x:hidden;
+}
+button{font-family:inherit}
+
+.screen{
+  display:none;width:100%;min-height:100vh;
+  flex-direction:column;
+  background:var(--bg-surface);
+  border-top:2px solid var(--gold);
+}
+.screen.active{display:flex;animation:screenIn .35s ease both}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ SHARED TOPBAR ═══ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 32px;flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.logo-icon{width:52px;height:52px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:42px;height:42px}
+.logo-text{line-height:1.1}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:4px}
+.logo-sub{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:5px;color:var(--muted);text-transform:uppercase}
+.online-status{display:flex;align-items:center;gap:8px}
+.cage-dot{width:11px;height:11px;border-radius:50%;background:var(--green-status);box-shadow:0 0 8px var(--green-status);animation:pulse 2s ease-in-out infinite}
+.cage-status-text{font-family:var(--mono);font-size:20px;color:var(--green-status);letter-spacing:3px}
+.site-url{font-family:var(--mono);font-size:24px;color:#ffffff;letter-spacing:3px}
+.status-divider{width:1px;height:18px;background:rgba(255,255,255,.1)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.divider{height:1px;background:var(--border);margin:0 32px;flex-shrink:0}
+.statusbar{
+  display:flex;align-items:center;justify-content:center;
+  padding:10px 32px;border-top:1px solid var(--border);
+  flex-shrink:0;flex-wrap:wrap;gap:10px;
+}
+.status-right{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px}
+
+/* ═══ SCREEN 1: SELECT MODE ═══ */
+.middle{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:24px 32px 20px;flex-shrink:0;
+}
+.middle-left{flex:1}
+.select-hint{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:6px}
+.hero-title{
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,8vw,82px);
+  line-height:1;letter-spacing:3px;margin-bottom:4px;white-space:nowrap;
+}
+.hero-title span{color:var(--gold)}
+.hero-bar{display:none}
+.select-mode-text{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4vw,42px);color:var(--muted);letter-spacing:5px}
+
+.cards{flex:1;display:flex;gap:14px;padding:0 32px 14px;min-height:520px}
+.card{
+  flex:1;border-radius:14px;overflow:hidden;position:relative;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  cursor:pointer;transition:transform .15s ease, box-shadow .15s ease;min-height:520px;
+}
+.card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.card:active{transform:scale(.98)}
+.card--game{background:linear-gradient(150deg, #0a2a7a 0%, #1040a8 35%, #1850b8 55%, #0e38a0 75%, #081e6a 100%)}
+.card--training{background:linear-gradient(150deg, #5a10a0 0%, #6c18b8 35%, #7e22c8 55%, #6418b0 75%, #480e88 100%)}
+.card--pitching{background:linear-gradient(150deg, #087050 0%, #0a8860 35%, #0e9a6e 55%, #088058 75%, #066040 100%)}
+.game-design{position:absolute;inset:0;z-index:0;overflow:hidden}
+.game-design svg{width:100%;height:100%}
+.card::before{content:'';position:absolute;inset:0;z-index:0}
+.card-top{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 0}
+.card-bottom{
+  position:relative;z-index:2;padding:60px 22px 24px;
+  background:linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,.85) 40%, rgba(0,0,0,.5) 70%, rgba(0,0,0,.15) 85%, transparent 100%);
+  display:flex;flex-direction:column;min-height:280px;justify-content:flex-end;
+}
+.card-title{
+  font-family:'Bebas Neue',sans-serif;font-size:80px;font-weight:700;
+  letter-spacing:4px;line-height:80px;height:80px;color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.5);flex-shrink:0;margin:0 0 18px 0;padding:0;white-space:nowrap;overflow:visible;
+}
+.card-desc{
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:500;
+  color:rgba(255,255,255,.92);line-height:1.45;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.5);
+  height:auto;
+}
+.app-select .topbar{animation:fadeIn .3s ease both}
+.app-select .middle{animation:fadeIn .4s .1s ease both}
+.app-select .card:nth-child(1){animation:cardIn .4s .15s ease both}
+.app-select .card:nth-child(2){animation:cardIn .4s .25s ease both}
+.app-select .card:nth-child(3){animation:cardIn .4s .35s ease both}
+.app-select .statusbar{animation:fadeIn .3s .4s ease both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ SCREEN 2: SAFETY WARNING ═══ */
+.safety-screen{border-top-color:var(--red)}
+
+.safety-subheader{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:20px 32px 14px;flex-shrink:0;flex-wrap:wrap;gap:14px;
+}
+.safety-mode-chip{display:none}
+.safety-mode-chip-label{
+  font-family:var(--mono);font-size:11px;letter-spacing:2px;
+  color:var(--muted);text-transform:uppercase;
+}
+.safety-mode-chip-value{
+  font-family:'Bebas Neue',sans-serif;font-size:20px;
+  letter-spacing:3px;color:var(--text);
+}
+[data-safety-mode="game"] .safety-mode-chip-value{color:#3068d0}
+[data-safety-mode="training"] .safety-mode-chip-value{color:#9024d8}
+.safety-subheader-left{display:flex;align-items:center;gap:18px}
+.safety-page-title-block{line-height:1}
+.safety-page-mode{
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,7vw,76px);
+  letter-spacing:4px;line-height:1;color:var(--red-bright);font-weight:700;
+}
+.safety-page-sublabel-inline{
+  color:var(--muted);margin-left:6px;font-size:.5em;
+  vertical-align:baseline;font-family:'Bebas Neue',sans-serif;
+  letter-spacing:3px;font-weight:700;
+}
+
+.safety-content{flex:1;display:flex;flex-direction:column;padding:0 32px 14px;gap:14px;min-height:0}
+
+.safety-hero{
+  padding:18px 24px;border-radius:10px;
+  background:rgba(200,32,64,.12);border:1px solid rgba(200,32,64,.35);
+  display:flex;align-items:center;gap:18px;flex-shrink:0;
+  position:relative;overflow:hidden;
+}
+.safety-hero::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(-45deg,transparent,transparent 18px,rgba(200,32,64,.03) 18px,rgba(200,32,64,.03) 36px);
+  pointer-events:none;
+}
+.safety-hero-icon{
+  position:relative;z-index:1;width:44px;height:44px;flex-shrink:0;
+  border-radius:8px;background:rgba(200,32,64,.2);
+  display:flex;align-items:center;justify-content:center;
+}
+.safety-hero-icon svg{width:24px;height:24px;stroke:var(--red-bright);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.safety-hero-text{
+  position:relative;z-index:1;
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  color:rgba(255,200,210,1);letter-spacing:1.5px;line-height:1.4;
+  text-transform:uppercase;
+}
+
+.rules{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+.rule{
+  flex:1;border-radius:14px;border:1px solid var(--border);background:var(--bg-card);
+  overflow:hidden;position:relative;display:flex;align-items:center;
+  gap:22px;padding:0 28px;
+}
+.rule::before{display:none}
+.rule-accent{position:absolute;left:0;top:0;bottom:0;width:4px;z-index:1}
+.rule--1 .rule-accent{background:var(--red-bright)}
+.rule--2 .rule-accent{background:var(--gold)}
+.rule--3 .rule-accent{background:#5080e0}
+.rule--4 .rule-accent{background:#e08030}
+.rule-wm{display:none}
+.rule-top{position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.rule-num{
+  width:80px;height:80px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:1px;flex-shrink:0;
+}
+.rule--1 .rule-num{background:rgba(200,32,64,.12);color:var(--red-bright);border:1px solid rgba(200,32,64,.2)}
+.rule--2 .rule-num{background:rgba(240,168,40,.1);color:var(--gold);border:1px solid rgba(240,168,40,.18)}
+.rule--3 .rule-num{background:rgba(48,104,208,.1);color:#5080e0;border:1px solid rgba(48,104,208,.18)}
+.rule--4 .rule-num{background:rgba(224,128,48,.1);color:#e08030;border:1px solid rgba(224,128,48,.18)}
+.rule-icon{display:none}
+.rule--1 .rule-icon{background:rgba(200,32,64,.1);border:1.5px solid rgba(200,32,64,.18)}
+.rule--2 .rule-icon{background:rgba(240,168,40,.08);border:1.5px solid rgba(240,168,40,.14)}
+.rule--3 .rule-icon{background:rgba(48,104,208,.1);border:1.5px solid rgba(48,104,208,.16)}
+.rule--4 .rule-icon{background:rgba(224,128,48,.08);border:1.5px solid rgba(224,128,48,.15)}
+.rule-icon svg{width:26px;height:26px;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.rule--1 .rule-icon svg{stroke:var(--red-bright)}
+.rule--2 .rule-icon svg{stroke:var(--gold)}
+.rule--3 .rule-icon svg{stroke:#5080e0}
+.rule--4 .rule-icon svg{stroke:#e08030}
+.rule-tag{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.rule--1 .rule-tag{color:rgba(232,64,96,.6)}
+.rule--2 .rule-tag{color:rgba(240,168,40,.6)}
+.rule--3 .rule-tag{color:rgba(80,128,224,.6)}
+.rule--4 .rule-tag{color:rgba(224,128,48,.6)}
+.rule-text{
+  position:relative;z-index:1;
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:600;
+  line-height:1.55;letter-spacing:.5px;color:rgba(255,255,255,.85);
+  text-transform:uppercase;
+}
+
+.safety-action{
+  display:flex;align-items:center;justify-content:center;
+  padding:14px 0 0;flex-shrink:0;
+}
+.accept-btn{
+  width:60%;max-width:560px;padding:22px 0;border-radius:10px;
+  background:rgba(16,180,120,.35);
+  color:white;font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:6px;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 20px rgba(16,180,120,.25);
+  transition:box-shadow .15s;text-align:center;line-height:1;
+  position:relative;overflow:hidden;
+  border:1px solid rgba(20,210,140,.55);
+}
+.accept-btn:hover{box-shadow:0 0 28px rgba(20,210,140,.5)}
+.accept-btn-fill{
+  position:absolute;left:0;top:0;bottom:0;width:0;
+  background:linear-gradient(135deg, #14b478, #20d896);
+  transition:width .05s linear;
+  z-index:0;
+}
+.accept-btn.holding .accept-btn-fill{transition:width 1.5s linear;width:100%}
+.accept-btn.complete{
+  background:linear-gradient(135deg, #14b478, #20d896);
+  box-shadow:0 4px 20px rgba(20,210,140,.6);
+}
+.accept-btn.complete .accept-btn-fill{width:100%}
+.accept-btn-label{position:relative;z-index:1}
+
+.screen-safety .topbar{animation:fadeIn .3s ease both}
+.screen-safety .safety-subheader{animation:fadeIn .35s .05s ease both}
+.screen-safety .safety-hero{animation:fadeIn .35s .1s ease both}
+.screen-safety .rule:nth-child(1){animation:cardIn .35s .15s ease both}
+.screen-safety .rule:nth-child(2){animation:cardIn .35s .22s ease both}
+.screen-safety .rule:nth-child(3){animation:cardIn .35s .29s ease both}
+.screen-safety .rule:nth-child(4){animation:cardIn .35s .36s ease both}
+.screen-safety .safety-action{animation:fadeIn .3s .42s ease both}
+.screen-safety .statusbar{animation:fadeIn .3s .45s ease both}
+
+/* ═══ SCREEN 3: SETTINGS ═══ */
+.subheader{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 32px 14px;flex-shrink:0;flex-wrap:wrap;gap:14px;
+}
+.subheader-left{display:flex;align-items:center;gap:18px}
+.back-btn{
+  width:80px;height:44px;border-radius:10px;
+  border:1px solid var(--border);background:rgba(255,255,255,.04);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.back-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(232,168,32,.3)}
+.back-btn:active{transform:scale(.95)}
+.back-btn svg{width:24px;height:24px;stroke:var(--gold);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.page-title-block{line-height:1}
+.page-mode{
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,7vw,76px);
+  letter-spacing:4px;line-height:1;color:var(--gold);transition:color .3s;font-weight:700;
+}
+.page-settings-inline{color:var(--muted);margin-left:6px;font-size:.5em;vertical-align:baseline}
+.page-sublabel{font-family:var(--mono);font-size:13px;letter-spacing:6px;color:var(--muted);margin-top:8px;text-transform:uppercase}
+.page-bar{display:none}
+
+.warning{
+  margin:0 32px 14px;padding:18px 24px;border-radius:10px;
+  background:rgba(200,32,64,.12);border:1px solid rgba(200,32,64,.35);
+  display:flex;align-items:center;gap:18px;flex-shrink:0;
+}
+.warning::before,.warning::after{display:none}
+.warning-icon{
+  width:44px;height:44px;flex-shrink:0;border-radius:8px;background:rgba(200,32,64,.2);
+  display:flex;align-items:center;justify-content:center;
+}
+.warning-icon svg{width:24px;height:24px;stroke:#ff6080;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.warning-text{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:rgba(255,200,210,1);letter-spacing:1.5px}
+
+.main{flex:1;display:flex;gap:14px;padding:0 32px 14px;min-height:0}
+.panel{border-radius:14px;overflow:hidden;position:relative;background:var(--bg-surface);border:1px solid var(--border)}
+.panel::before{display:none}
+.panel-left{flex:1.1;display:flex;flex-direction:column;min-height:540px}
+.panel-left .panel-bg{position:absolute;inset:0;z-index:0;opacity:.85;transition:opacity .4s, background .4s}
+.panel--game .panel-bg{background:#1040a8}
+.panel--training .panel-bg{background:#6c18b8}
+.panel--pitching .panel-bg{background:#0a8860}
+.panel-top{position:relative;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;padding:16px 18px 0}
+.panel-tag{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px}
+.batter-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;padding:30px 20px 20px}
+.mode-illustration{position:absolute;top:50%;left:50%;width:100%;height:100%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;opacity:.55}
+.mode-illustration svg{width:100%;height:100%}
+.ready-state{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%;padding-bottom:8px}
+.ready-mono{
+  font-family:var(--mono);font-size:12px;letter-spacing:3px;
+  color:rgba(255,255,255,.6);text-align:center;padding:8px 16px;border-radius:6px;
+  background:rgba(0,0,0,.3);backdrop-filter:blur(4px);
+}
+.mode-selector{position:relative;z-index:2;padding:18px 22px 22px;background:linear-gradient(0deg, rgba(0,0,0,.6) 0%, rgba(0,0,0,.2) 70%, transparent 100%)}
+.mode-label{font-family:var(--mono);font-size:14px;color:rgba(255,255,255,.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.mode-tabs{display:flex;background:transparent;border:none}
+.mode-tabs--grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.mode-tabs--grid:not(.has-custom){
+  grid-template-columns:1fr 1fr 1fr;
+}
+.mode-tabs--grid .mode-tab{border-right:none;border-bottom:none}
+.mode-tabs--grid.has-custom .mode-tab[data-mode="kids"]{border-bottom:none}
+.mode-tabs--grid.has-custom .mode-tab[data-mode="normal"]{border-bottom:none}
+.mode-tabs--grid:not(.has-custom) .mode-tab{border-right:none;border-bottom:none}
+.mode-tab{
+  flex:1;padding:20px 0;text-align:center;font-weight:700;font-size:24px;
+  letter-spacing:4px;cursor:pointer;transition:all .2s;
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  color:rgba(255,255,255,.45);font-family:'Bebas Neue',sans-serif;
+}
+.mode-tab:hover{color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.25)}
+.mode-tab.active{
+  background:var(--accent-soft);color:#1a1208;
+  border-color:var(--accent-soft);
+  box-shadow:0 0 18px rgba(216,200,160,.25);
+}
+.mode-tab + .mode-tab{border-left:none}
+.mode-hint{
+  font-family:'Rajdhani',sans-serif;font-size:16px;color:rgba(255,255,255,.85);
+  margin-top:14px;text-align:center;font-weight:500;line-height:1.4;min-height:22px;
+  text-transform:uppercase;letter-spacing:1px;
+}
+
+.panel-right{flex:1;display:flex;flex-direction:column;min-height:540px;background:var(--bg-card)}
+.controls-header{
+  position:relative;z-index:2;padding:24px 28px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);
+}
+.controls-header-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;font-weight:700}
+.controls-header-tag{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:2px}
+.controls-card{
+  flex:1;padding:32px;display:flex;flex-direction:column;
+  justify-content:center;gap:36px;position:relative;z-index:1;background:var(--bg-card);
+}
+
+.slider-group{position:relative;transition:opacity .25s}
+.slider-group.disabled{opacity:.35;pointer-events:none}
+.slider-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.slider-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.slider-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;color:var(--accent-soft);transition:color .15s}
+.slider-val.flash{color:#fff}
+.slider-unit{font-size:14px;color:var(--muted);margin-left:6px;font-family:var(--mono);letter-spacing:1px}
+.slider-wrap{position:relative;height:32px;display:flex;align-items:center}
+.slider-track-bg{position:absolute;left:0;right:0;top:50%;height:8px;border-radius:4px;background:rgba(255,255,255,.08);transform:translateY(-50%);pointer-events:none}
+.slider-fill{position:absolute;top:50%;left:0;height:8px;border-radius:4px;background:var(--accent-soft);transform:translateY(-50%);pointer-events:none;z-index:0;transition:width .15s ease}
+.slider-input{
+  -webkit-appearance:none;appearance:none;width:100%;height:32px;
+  background:transparent;outline:none;cursor:pointer;position:relative;z-index:2;margin:0;
+}
+.slider-input::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;
+  background:var(--accent-soft);border:4px solid #1a1208;
+  box-shadow:0 0 0 1px var(--accent-soft), 0 2px 8px rgba(0,0,0,.5);
+  cursor:pointer;transition:transform .12s;
+}
+.slider-input::-webkit-slider-thumb:hover{transform:scale(1.15)}
+.slider-input::-webkit-slider-thumb:active{transform:scale(1.25)}
+.slider-input::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);border:4px solid #1a1208;cursor:pointer}
+.slider-range{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:1px}
+
+.pitch-toggle{position:relative;display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:rgba(0,0,0,.25);margin-top:8px}
+.pitch-opt{
+  flex:1;padding:20px 0;text-align:center;font-weight:700;font-size:20px;
+  letter-spacing:3px;cursor:pointer;border:none;background:transparent;
+  color:var(--muted);font-family:'Bebas Neue',sans-serif;transition:all .2s;
+}
+.pitch-opt:hover{color:rgba(255,255,255,.8)}
+.pitch-opt.active{background:var(--accent-soft);color:#1a1208}
+.pitch-opt + .pitch-opt{border-left:1px solid var(--border)}
+
+.stats-strip{display:none !important}
+.stat{flex:1;text-align:center;padding:14px 8px;position:relative}
+.stat + .stat::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:1px;background:var(--border)}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;line-height:1;transition:color .2s;color:var(--text)}
+.stat-val.live{color:var(--gold)}
+.stat-unit{font-size:11px;color:var(--muted);margin-left:3px;font-family:var(--mono);letter-spacing:1px}
+.stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px}
+
+.start-btn{
+  width:100%;padding:22px 0;border-radius:10px;border:none;
+  background:var(--gold);color:#0a0805;font-family:'Bebas Neue',sans-serif;
+  font-size:32px;letter-spacing:8px;font-weight:700;cursor:pointer;
+  box-shadow:0 0 24px rgba(232,168,32,.25);transition:all .15s;
+  position:relative;text-align:center;line-height:1;margin-top:8px;
+}
+.start-btn:hover{box-shadow:0 0 32px rgba(232,168,32,.5);transform:translateY(-1px)}
+.start-btn:active{transform:scale(.97)}
+.start-btn.running{display:none}
+
+/* ═══ SCREEN 4: TRANSITION ═══ */
+.standby-pill{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:8px;
+  background:rgba(240,168,40,.08);
+  border:1px solid rgba(240,168,40,.18);
+}
+.standby-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--gold);
+  animation:standbyBlink 1.5s ease-in-out infinite;
+}
+@keyframes standbyBlink{0%,100%{opacity:1}50%{opacity:.3}}
+.standby-text{
+  font-family:var(--mono);font-size:13px;
+  color:var(--gold);letter-spacing:2px;
+}
+
+.cta-banner{
+  margin:14px 32px 14px;
+  padding:24px;
+  border-radius:10px;
+  background:rgba(10,42,122,.18);
+  border:1px solid rgba(48,104,208,.25);
+  text-align:center;
+  flex-shrink:0;
+  position:relative;
+  overflow:hidden;
+  transition:background .3s, border-color .3s;
+}
+.cta-banner.ready{
+  background:rgba(232,168,32,.12);
+  border:1px solid rgba(232,168,32,.5);
+  cursor:pointer;
+  animation:readyPulse 1.6s ease-in-out infinite;
+}
+.cta-banner.ready .cta-text{
+  color:var(--gold);
+  text-shadow:0 0 24px rgba(232,168,32,.5);
+}
+.cta-banner.ready .cta-sub{color:rgba(232,168,32,.7)}
+@keyframes readyPulse{
+  0%,100%{box-shadow:0 0 30px rgba(232,168,32,.15)}
+  50%{box-shadow:0 0 50px rgba(232,168,32,.35)}
+}
+.cta-banner::after{
+  content:'';position:absolute;
+  top:0;left:-100%;
+  width:60%;height:100%;
+  background:linear-gradient(90deg, transparent, rgba(48,104,208,.08), transparent);
+  animation:shimmer 3s ease-in-out infinite;
+  z-index:0;pointer-events:none;
+}
+@keyframes shimmer{0%{left:-100%}100%{left:200%}}
+.cta-text{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:54px;letter-spacing:8px;
+  position:relative;z-index:1;
+  color:#fff;
+}
+.cta-sub{
+  font-family:'Rajdhani',sans-serif;font-size:16px;
+  color:rgba(255,255,255,.6);letter-spacing:2px;
+  margin-top:8px;position:relative;z-index:1;
+  text-transform:uppercase;font-weight:500;
+}
+
+.transition-main{
+  flex:1;display:flex;gap:14px;
+  padding:0 32px 14px;min-height:0;
+}
+.instr-panel{
+  flex:1;border-radius:14px;
+  border:1px solid var(--border);background:var(--bg-card);
+  overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:36px;text-align:center;
+}
+.instr-panel--action{
+  background:radial-gradient(ellipse 60% 50% at 50% 45%, rgba(8,112,80,.1) 0%, transparent 60%), var(--bg-card);
+}
+.instr-panel--step2{
+  background:radial-gradient(ellipse 60% 50% at 50% 45%, rgba(48,104,208,.1) 0%, transparent 60%), var(--bg-card);
+}
+.instr-panel--safety{
+  background:radial-gradient(ellipse 60% 50% at 50% 45%, rgba(200,32,64,.08) 0%, transparent 60%), var(--bg-card);
+}
+.instr-icon{
+  position:relative;z-index:1;
+  width:130px;height:130px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:28px;
+}
+.instr-panel--action .instr-icon{
+  background:rgba(8,112,80,.12);
+  border:2px solid rgba(20,210,140,.3);
+  box-shadow:0 0 50px rgba(20,210,140,.15);
+}
+.instr-panel--step2 .instr-icon{
+  background:rgba(48,104,208,.12);
+  border:2px solid rgba(80,128,224,.3);
+  box-shadow:0 0 50px rgba(80,128,224,.15);
+}
+.instr-panel--safety .instr-icon{
+  background:rgba(200,32,64,.12);
+  border:2px solid rgba(232,64,96,.3);
+  box-shadow:0 0 50px rgba(232,64,96,.15);
+}
+.instr-icon svg{width:56px;height:56px;stroke-width:1.8}
+.instr-panel--action .instr-icon svg{stroke:#20d896}
+.instr-panel--step2 .instr-icon svg{stroke:#5080e0}
+.instr-panel--safety .instr-icon svg{stroke:#e84060}
+.instr-panel--action .instr-icon::after{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid rgba(20,210,140,.2);
+  animation:pulseRing 2s ease-in-out infinite;
+}
+.instr-panel--step2 .instr-icon::after{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid rgba(80,128,224,.2);
+  animation:pulseRing 2s ease-in-out infinite .5s;
+}
+@keyframes pulseRing{
+  0%,100%{transform:scale(1);opacity:.6}
+  50%{transform:scale(1.12);opacity:0}
+}
+.instr-step{
+  position:relative;z-index:1;
+  font-family:var(--mono);font-size:14px;letter-spacing:3px;
+  text-transform:uppercase;margin-bottom:18px;
+  padding:8px 20px;border-radius:6px;
+}
+.instr-panel--action .instr-step{
+  background:rgba(8,112,80,.14);color:#20d896;
+  border:1px solid rgba(20,210,140,.25);
+}
+.instr-panel--step2 .instr-step{
+  background:rgba(48,104,208,.14);color:#5080e0;
+  border:1px solid rgba(80,128,224,.25);
+}
+.instr-panel--safety .instr-step{
+  background:rgba(200,32,64,.12);color:#e84060;
+  border:1px solid rgba(232,64,96,.25);
+}
+.instr-title{
+  position:relative;z-index:1;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:40px;letter-spacing:3px;
+  line-height:1.2;margin-bottom:14px;
+  max-width:480px;color:#fff;
+}
+.instr-line{
+  position:relative;z-index:1;
+  width:60px;height:2px;border-radius:1px;
+  margin-bottom:16px;
+}
+.instr-panel--action .instr-line{background:rgba(20,210,140,.4)}
+.instr-panel--step2 .instr-line{background:rgba(80,128,224,.4)}
+.instr-panel--safety .instr-line{background:rgba(232,64,96,.4)}
+.instr-desc{
+  position:relative;z-index:1;
+  font-family:'Rajdhani',sans-serif;
+  font-size:20px;color:rgba(255,255,255,.7);
+  line-height:1.5;max-width:400px;font-weight:500;
+  text-transform:uppercase;letter-spacing:.8px;
+}
+
+.transition-bottom{
+  display:flex;flex-direction:column;gap:14px;
+  padding:0 32px 18px;flex-shrink:0;
+}
+
+.loading-bar-container{
+  position:relative;z-index:1;
+  width:100%;
+}
+.loading-bar-track{
+  width:100%;height:18px;border-radius:9px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;position:relative;
+  border:1px solid rgba(255,255,255,.04);
+}
+.loading-bar-fill{
+  position:absolute;left:0;top:0;bottom:0;width:0;
+  background:linear-gradient(90deg, #3068d0, #5080e0, #3068d0);
+  background-size:200% 100%;
+  border-radius:9px;
+  box-shadow:0 0 18px rgba(80,128,224,.55);
+  transition:width .15s linear;
+  animation:loadingShine 2s linear infinite;
+}
+@keyframes loadingShine{
+  0%{background-position:0% 50%}
+  100%{background-position:200% 50%}
+}
+.loading-bar-meta{display:none}
+.loading-bar-label{
+  font-family:var(--mono);font-size:13px;letter-spacing:2px;
+  color:rgba(255,255,255,.55);text-transform:uppercase;
+}
+.loading-bar-pct{
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;
+  color:#5080e0;
+}
+.loading-bar-container.complete .loading-bar-fill{
+  background:linear-gradient(90deg, #14b478, #20d896);
+  box-shadow:0 0 22px rgba(20,210,140,.7);
+  animation:none;
+}
+.loading-bar-container.complete .loading-bar-pct{color:#20d896}
+.loading-bar-container.complete .loading-bar-label{color:#20d896}
+.transition-stats-wrap{
+  display:flex;flex-direction:column;gap:10px;
+}
+.transition-stats-title{
+  font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:5px;
+  color:rgba(255,255,255,.7);text-transform:uppercase;
+  padding:0 4px;text-align:center;
+}
+.transition-stats{
+  display:flex;flex:1;
+  border-radius:12px;border:1px solid var(--border);
+  background:var(--bg-card);overflow:hidden;
+}
+.stat-block{
+  display:flex;align-items:center;gap:20px;
+  padding:24px 32px;flex:1;position:relative;
+}
+.stat-block + .stat-block::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:1px;background:var(--border);
+}
+.stat-icon{
+  width:64px;height:64px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.stat-icon svg{width:32px;height:32px;stroke-width:1.8}
+.stat-icon--diff{background:rgba(144,36,216,.14);border:1px solid rgba(144,36,216,.25)}
+.stat-icon--diff svg{stroke:#b060f0}
+.stat-icon--speed{background:rgba(48,104,208,.14);border:1px solid rgba(48,104,208,.25)}
+.stat-icon--speed svg{stroke:#5080e0}
+.stat-icon--height{background:rgba(8,112,80,.14);border:1px solid rgba(20,210,140,.25)}
+.stat-icon--height svg{stroke:#20d896}
+.stat-info{display:flex;flex-direction:column;gap:4px}
+.stat-label{
+  font-family:var(--mono);font-size:13px;letter-spacing:2.5px;
+  color:var(--muted);text-transform:uppercase;
+}
+.stat-value{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:44px;letter-spacing:2px;line-height:1;color:#fff;
+}
+.stat-icon--diff + .stat-info .stat-value{color:#b060f0}
+.stat-icon--speed + .stat-info .stat-value{color:#5080e0}
+.stat-icon--height + .stat-info .stat-value{color:#20d896}
+.stat-info .stat-unit{font-size:14px;letter-spacing:1.5px}
+
+.transition-start-btn{
+  padding:24px 64px;border-radius:10px;border:none;
+  background:var(--gold);color:#0a0805;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:36px;letter-spacing:8px;font-weight:700;
+  cursor:pointer;box-shadow:0 0 32px rgba(232,168,32,.35);
+  transition:all .15s;line-height:1;
+}
+.transition-start-btn:hover{box-shadow:0 0 48px rgba(232,168,32,.6);transform:translateY(-1px)}
+.transition-start-btn:active{transform:scale(.97)}
+
+.screen-transition .topbar{animation:fadeIn .3s ease both}
+.screen-transition .subheader{animation:fadeIn .3s .05s ease both}
+.screen-transition .cta-banner{animation:fadeIn .3s .1s ease both}
+.screen-transition .instr-panel:nth-child(1){animation:cardIn .4s .15s ease both}
+.screen-transition .instr-panel:nth-child(2){animation:cardIn .4s .25s ease both}
+.screen-transition .instr-panel:nth-child(3){animation:cardIn .4s .35s ease both}
+.screen-transition .transition-bottom{animation:fadeIn .3s .35s ease both}
+
+@media(max-width:900px){
+  .transition-main{flex-direction:column;padding:0 16px 14px}
+  .transition-bottom{flex-direction:column;padding:0 16px 18px}
+  .transition-start-btn{width:100%}
+  .cta-banner{margin:0 16px 14px}
+  .cta-text{font-size:28px;letter-spacing:3px}
+}
+
+.tap-to-start-overlay{
+  position:absolute;inset:0;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(10,12,20,.78);
+  backdrop-filter:blur(6px);
+  z-index:100;
+  cursor:pointer;
+  animation:overlayIn .4s ease both;
+}
+.tap-to-start-overlay.active{display:flex}
+@keyframes overlayIn{from{opacity:0}to{opacity:1}}
+.tap-to-start-content{
+  text-align:center;
+  animation:tapPulse 1.6s ease-in-out infinite;
+}
+@keyframes tapPulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.04);opacity:.85}
+}
+.tap-to-start-text{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(60px,10vw,120px);
+  letter-spacing:8px;color:var(--gold);
+  line-height:1;text-shadow:0 0 40px rgba(232,168,32,.5);
+}
+.tap-to-start-sub{
+  font-family:var(--mono);font-size:18px;
+  letter-spacing:4px;color:rgba(255,255,255,.55);
+  margin-top:18px;text-transform:uppercase;
+}
+
+.screen-transition{position:relative}
+
+.pitch-flash{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Bebas Neue',sans-serif;font-size:140px;letter-spacing:8px;
+  color:var(--gold);pointer-events:none;opacity:0;z-index:1000;
+  text-shadow:0 0 60px rgba(232,168,32,.7);
+}
+.pitch-flash.show{animation:pitchFlash .6s ease-out}
+@keyframes pitchFlash{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}
+}
+
+.app-settings[data-mode="game"] .page-bar{background:#3068d0}
+.app-settings[data-mode="game"] .page-mode{color:#3068d0}
+.app-settings[data-mode="training"] .page-bar{background:#9024d8}
+.app-settings[data-mode="training"] .page-mode{color:#9024d8}
+.app-settings[data-mode="pitching"] .page-bar{background:#0a9a6a}
+.app-settings[data-mode="pitching"] .page-mode{color:#0a9a6a}
+
+.app-settings .topbar{animation:fadeIn .3s ease both}
+.app-settings .subheader{animation:fadeIn .35s .05s ease both}
+.app-settings .warning{animation:fadeIn .35s .1s ease both}
+.app-settings .panel-left{animation:cardIn .4s .15s ease both}
+.app-settings .panel-right{animation:cardIn .4s .25s ease both}
+.app-settings .statusbar{animation:fadeIn .3s .35s ease both}
+
+@media(max-width:900px){
+  .cards{flex-direction:column;min-height:auto;padding:0 16px 16px}
+  .card{min-height:280px}
+  .hero-title{white-space:normal}
+  .topbar{padding:14px 16px}
+  .middle{padding:18px 16px 14px}
+  .statusbar{padding:10px 16px}
+  .divider{margin:0 16px}
+  .subheader{padding:16px 16px 12px}
+  .warning{margin:0 16px 12px}
+  .main{flex-direction:column;padding:0 16px 12px}
+  .panel-left,.panel-right{min-height:auto}
+  .panel-left{min-height:420px}
+  .online-status .site-url{display:none}
+  .safety-subheader{padding:16px 16px 12px}
+  .safety-content{padding:0 16px 14px}
+  .rules{flex-direction:column}
+  .rule{padding:20px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SCREEN 1: SELECT MODE ═══ -->
+<div class="screen app-select active" id="screenSelect">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4 L4 20 L17 30 L30 20 L30 4 Z" stroke="white" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">BASES LOADED</div>
+        <div class="logo-sub">Batting Cages</div>
+      </div>
+    </div>
+    <div class="online-status">
+      <span class="site-url">BASESLOADED.COM</span>
+      <span class="status-divider"></span>
+      <span class="cage-dot"></span>
+      <span class="cage-status-text">ONLINE</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="middle">
+    <div class="middle-left">
+      <div class="select-hint" style="display:none">MODE SELECTION</div>
+      <div class="hero-title">WHAT'LL IT BE, <span>SLUGGER?</span></div>
+      <div class="hero-bar"></div>
+      <div class="select-mode-text">SELECT YOUR MODE</div>
+    </div>
+  </div>
+  <div class="cards">
+    <div class="card card--game" onclick="selectMode('game')">
+      <div class="game-design">
+        <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <radialGradient id="light1"><stop offset="0%" stop-color="rgba(160,170,200,.35)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+          <circle cx="100" cy="40" r="80" fill="url(#light1)"/><circle cx="300" cy="40" r="80" fill="url(#light1)"/>
+          <path d="M-20 200 A250 250 0 0 1 420 200" stroke="rgba(160,170,200,.5)" stroke-width="2.5" fill="none"/>
+          <path d="M200 450 L50 280 A200 200 0 0 1 350 280 Z" fill="rgba(160,170,200,.08)" stroke="rgba(160,170,200,.5)" stroke-width="2"/>
+          <rect x="200" y="300" width="80" height="80" rx="3" transform="rotate(45 200 300)" stroke="rgba(160,170,200,.65)" stroke-width="2.5" fill="rgba(160,170,200,.06)"/>
+          <rect x="196" y="368" width="8" height="8" fill="rgba(160,170,200,.75)" transform="rotate(45 200 372)"/>
+          <rect x="150" y="296" width="6" height="6" fill="rgba(160,170,200,.65)" transform="rotate(45 153 299)"/>
+          <rect x="196" y="258" width="6" height="6" fill="rgba(160,170,200,.65)" transform="rotate(45 199 261)"/>
+          <rect x="240" y="296" width="6" height="6" fill="rgba(160,170,200,.65)" transform="rotate(45 243 299)"/>
+          <circle cx="200" cy="310" r="5" fill="rgba(160,170,200,.35)" stroke="rgba(160,170,200,.55)" stroke-width="1.5"/>
+          <line x1="200" y1="375" x2="50" y2="220" stroke="rgba(160,170,200,.5)" stroke-width="2"/>
+          <line x1="200" y1="375" x2="350" y2="220" stroke="rgba(160,170,200,.5)" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="card-top"></div>
+      <div class="card-bottom">
+        <div class="card-title">GAME</div>
+        <div class="card-desc">10 pitches. Make contact to score a hit, miss for a strike. How many can you connect on?</div>
+      </div>
+    </div>
+    <div class="card card--training" onclick="selectMode('training')">
+      <div class="game-design">
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <defs><radialGradient id="tglow"><stop offset="0%" stop-color="rgba(180,160,220,.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
+          <circle cx="170" cy="230" r="160" fill="url(#tglow)"/>
+          <g transform="rotate(-50, 200, 250)">
+            <path d="M 200 35 C 215 35, 226 42, 226 55 L 226 140 C 225 170, 222 200, 218 220 C 214 240, 211 258, 209 275 L 208 310 L 208 345 L 208 378 L 213 385 L 213 405 C 213 410, 210 412, 200 412 C 190 412, 187 410, 187 405 L 187 385 L 192 378 L 192 345 L 192 310 L 191 275 C 189 258, 186 240, 182 220 C 178 200, 175 170, 174 140 L 174 55 C 174 42, 185 35, 200 35 Z" fill="rgba(160,150,190,.55)" stroke="rgba(170,160,200,.75)" stroke-width="1.5" stroke-linejoin="round"/>
+            <line x1="192" y1="348" x2="208" y2="348" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="192" y1="354" x2="208" y2="354" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="192" y1="360" x2="208" y2="360" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="192" y1="366" x2="208" y2="366" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="192" y1="372" x2="208" y2="372" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/>
+          </g>
+          <circle cx="255" cy="380" r="28" fill="rgba(160,150,190,.6)" stroke="rgba(170,160,200,.75)" stroke-width="2"/>
+          <path d="M243 356 C248 368 248 392 243 404" stroke="rgba(100,30,160,.5)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M267 356 C262 368 262 392 267 404" stroke="rgba(100,30,160,.5)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="card-top"></div>
+      <div class="card-bottom">
+        <div class="card-title">SWING MODE</div>
+        <div class="card-desc">Endless pitches, no scoring. Focus on your mechanics and dial in your swing.</div>
+      </div>
+    </div>
+    <div class="card card--pitching" style="cursor:not-allowed;opacity:0.6">
+      <div class="game-design">
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <defs><radialGradient id="pglow"><stop offset="0%" stop-color="rgba(140,200,180,.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
+          <circle cx="220" cy="200" r="160" fill="url(#pglow)"/>
+          <line x1="30" y1="172" x2="120" y2="172" stroke="rgba(150,190,170,.15)" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="10" y1="195" x2="135" y2="195" stroke="rgba(150,190,170,.25)" stroke-width="3" stroke-linecap="round"/>
+          <line x1="40" y1="218" x2="125" y2="218" stroke="rgba(150,190,170,.18)" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="60" y1="240" x2="115" y2="240" stroke="rgba(150,190,170,.1)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="50" y1="150" x2="110" y2="150" stroke="rgba(150,190,170,.1)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="210" cy="195" r="62" fill="rgba(150,175,165,.55)" stroke="rgba(160,185,175,.75)" stroke-width="2.5"/>
+          <path d="M188 140 C196 160 196 230 188 250" stroke="rgba(0,100,70,.45)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M232 140 C224 160 224 230 232 250" stroke="rgba(0,100,70,.45)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <rect x="265" y="300" width="100" height="130" rx="3" stroke="rgba(150,190,170,.2)" stroke-width="1.5" fill="none" stroke-dasharray="6 4"/>
+          <path d="M305 445 L305 435 L325 435 L325 445 L315 455 Z" fill="rgba(150,190,170,.15)" stroke="rgba(150,190,170,.25)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="card-top"></div>
+      <div class="card-bottom">
+        <div class="card-title">PITCHING</div>
+        <div class="card-desc">Step on the mound and let it rip. Unlimited throws to dial in your delivery.</div>
+      </div>
+    </div>
+  </div>
+  <div class="statusbar" style="display:none">
+    <div class="status-right" id="clock">SYS // 00:00:00</div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 2: SAFETY WARNING ═══ -->
+<div class="screen screen-safety safety-screen" id="screenSafety">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4 L4 20 L17 30 L30 20 L30 4 Z" stroke="white" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">BASES LOADED</div>
+        <div class="logo-sub">Batting Cages</div>
+      </div>
+    </div>
+    <div class="online-status">
+      <span class="site-url">BASESLOADED.COM</span>
+      <span class="status-divider"></span>
+      <span class="cage-dot"></span>
+      <span class="cage-status-text">ONLINE</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="safety-subheader">
+    <div class="safety-subheader-left">
+      <div class="safety-page-title-block">
+        <div class="safety-page-mode">SAFETY <span class="safety-page-sublabel-inline">MANDATORY — READ BEFORE PLAYING</span></div>
+      </div>
+    </div>
+    <div class="safety-mode-chip" id="safetyModeChip">
+      <span class="safety-mode-chip-label">FOR</span>
+      <span class="safety-mode-chip-value" id="safetyModeValue">GAME MODE</span>
+    </div>
+  </div>
+
+  <div class="safety-content">
+    <div class="rules">
+      <div class="rule rule--1">
+        <div class="rule-accent"></div>
+        <div class="rule-wm">DANGER</div>
+        <div class="rule-top">
+          <div class="rule-num">01</div>
+          <div class="rule-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+              <line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>
+            </svg>
+          </div>
+        </div>
+        <div class="rule-text">Balls launch at high speeds directly towards the middle of the plate. Stay clear of the hit zone at all times. Never stand in the ball's path.</div>
+      </div>
+
+      <div class="rule rule--2">
+        <div class="rule-accent"></div>
+        <div class="rule-wm">PROTECT</div>
+        <div class="rule-top">
+          <div class="rule-num">02</div>
+          <div class="rule-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          </div>
+        </div>
+                  <div class="rule-text">All players must wear a batting helmet before entering the cage.</div>
+      </div>
+
+      <div class="rule rule--3">
+        <div class="rule-accent"></div>
+        <div class="rule-wm">ONE</div>
+        <div class="rule-top">
+          <div class="rule-num">03</div>
+          <div class="rule-icon">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        </div>
+        <div class="rule-text">Only one player is allowed inside the batting cage during active play. All others must wait outside.</div>
+      </div>
+
+      <div class="rule rule--4">
+        <div class="rule-accent"></div>
+        <div class="rule-wm">MACHINE</div>
+        <div class="rule-top">
+          <div class="rule-num">04</div>
+          <div class="rule-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="rule-text">Never touch, reach into, or adjust the pitching machine. It may still have balls loaded after your session — treat it as live until confirmed off.</div>
+      </div>
+    </div>
+
+    <div class="safety-action">
+      <button class="accept-btn" onclick="acceptSafety()">
+        I UNDERSTAND — CONTINUE
+      </button>
+    </div>
+  </div>
+
+  <div class="statusbar" style="display:none">
+    <div class="status-right" id="clockSafety">SYS // 00:00:00</div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 3: SETTINGS ═══ -->
+<div class="screen app-settings" id="screenSettings" data-mode="training">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4 L4 20 L17 30 L30 20 L30 4 Z" stroke="white" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">BASES LOADED</div>
+        <div class="logo-sub">Batting Cages</div>
+      </div>
+    </div>
+    <div class="online-status">
+      <span class="site-url">BASESLOADED.COM</span>
+      <span class="status-divider"></span>
+      <span class="cage-dot"></span>
+      <span class="cage-status-text">ONLINE</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="subheader">
+    <div class="subheader-left">
+      <button class="back-btn" onclick="goBack()" title="Back to mode select">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="page-title-block">
+        <div class="page-mode"><span id="pageAccent">GAME</span> <span class="page-settings-inline">SETTINGS</span></div>
+        <div class="page-bar"></div>
+      </div>
+    </div>
+  </div>
+  <div class="warning">
+    <div class="warning-icon">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+      <div class="warning-text">NEVER STAND DIRECTLY IN FRONT OF THE PITCHING MACHINE AT ANY TIME.</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="panel panel-left" id="leftPanel">
+      <div class="panel-bg"></div>
+      <div class="panel-top">
+        <div class="panel-brand"></div>
+        <div class="panel-tag" id="panelTag">[ DRILLS ]</div>
+      </div>
+      <div class="batter-area">
+        <div class="mode-illustration" id="modeIllustration"></div>
+        <div class="ready-state">
+          <div class="ready-mono" id="typoMono">[ READY — PRESS START ]</div>
+        </div>
+      </div>
+      <div class="mode-selector">
+        <div class="mode-label">[ Difficulty ]</div>
+        <div class="mode-tabs mode-tabs--grid has-custom">
+          <button class="mode-tab" data-mode="kids" onclick="setDifficulty(this)">ROOKIE</button>
+          <button class="mode-tab active" data-mode="normal" onclick="setDifficulty(this)">VETERAN</button>
+          <button class="mode-tab" data-mode="pro" onclick="setDifficulty(this)">PRO</button>
+          <button class="mode-tab mode-tab--custom" data-mode="custom" onclick="setDifficulty(this)" id="customTab">CUSTOM</button>
+        </div>
+        <div class="mode-hint" id="modeHint">Standard speed and frequency for general practice.</div>
+      </div>
+    </div>
+    <div class="panel panel-right">
+      <div class="controls-header">
+        <div class="controls-header-title">PITCH PARAMETERS</div>
+        <div class="controls-header-tag">[ TUNE ]</div>
+      </div>
+      <div class="controls-card">
+        <div class="slider-group disabled" id="freqGroup">
+          <div class="slider-header">
+            <span class="slider-name">Auto Pitch Frequency</span>
+            <span><span class="slider-val" id="freqVal">7</span><span class="slider-unit">/SEC</span></span>
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-fill" id="freqFill" style="width:33.3%"></div>
+            <input type="range" class="slider-input" id="freqInput" min="3" max="15" value="7">
+          </div>
+          <div class="slider-range"><span>3</span><span>15</span></div>
+        </div>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-name">Pitch Speed</span>
+            <span><span class="slider-val" id="speedVal">78</span><span class="slider-unit">KM/H</span></span>
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-fill" id="speedFill" style="width:23.75%"></div>
+            <input type="range" class="slider-input" id="speedInput" min="40" max="200" value="78">
+          </div>
+          <div class="slider-range"><span>40</span><span>200</span></div>
+        </div>
+        <div class="slider-group" id="heightGroup">
+          <div class="slider-header">
+            <span class="slider-name">Pitch Height</span>
+            <span><span class="slider-val" id="heightVal">5</span><span class="slider-unit">/ 10</span></span>
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-fill" id="heightFill" style="width:44.4%"></div>
+            <input type="range" class="slider-input" id="heightInput" min="1" max="10" value="5">
+          </div>
+          <div class="slider-range"><span>LOW</span><span>HIGH</span></div>
+        </div>
+
+        <div class="pitch-toggle">
+          <button class="pitch-opt active" data-pitch="manual" onclick="setPitchMode(this)">MANUAL PITCH</button>
+          <button class="pitch-opt" data-pitch="auto" onclick="setPitchMode(this)">AUTO PITCH</button>
+        </div>
+        <button class="start-btn" id="startBtn" onclick="toggleTraining()">
+          <span id="startLabel">START</span>
+        </button>
+      </div>
+      <div class="stats-strip" id="statsStrip" style="display:none">
+        <div class="stat">
+          <div class="stat-val" id="stat1Val">—</div>
+          <div class="stat-label" id="stat1Label">Pitches</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="stat2Val">—</div>
+          <div class="stat-label" id="stat2Label">Returns</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="stat3Val">—</div>
+          <div class="stat-label" id="stat3Label">Rate</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="statusbar" style="display:none">
+    <div class="status-right" id="clock2">SYS // 00:00:00</div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN 4: TRANSITION (ENTER BATTING ZONE) ═══ -->
+<div class="screen screen-transition" id="screenTransition" onclick="handleTapToStart(event)">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon">
+        <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4 L4 20 L17 30 L30 20 L30 4 Z" stroke="white" stroke-width="2.2" fill="none" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">BASES LOADED</div>
+        <div class="logo-sub">Batting Cages</div>
+      </div>
+    </div>
+    <div class="online-status">
+      <span class="site-url">BASESLOADED.COM</span>
+      <span class="status-divider"></span>
+      <span class="cage-dot"></span>
+      <span class="cage-status-text">ONLINE</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="subheader" style="display:none">
+    <div class="subheader-left">
+      <button class="back-btn" onclick="backFromTransition()" title="Back to settings">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="page-title-block">
+        <div class="page-mode"><span id="transitionMode">GAME</span> <span class="page-settings-inline">STANDBY</span></div>
+      </div>
+    </div>
+    <div class="standby-pill">
+      <span class="standby-dot"></span>
+      <span class="standby-text">WAITING FOR PLAYER</span>
+    </div>
+  </div>
+
+  <div class="cta-banner">
+    <div class="cta-text">LOADING BASES...</div>
+  </div>
+
+  <div class="transition-main">
+    <div class="instr-panel instr-panel--action">
+      <div class="instr-step">STEP 1</div>
+      <div class="instr-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+          <path d="M4 4 L20 4 L20 13 L12 21 L4 13 Z"/>
+        </svg>
+      </div>
+      <div class="instr-title">TAP THE HOME PLATE TO START BALL LAUNCH</div>
+      <div class="instr-line"></div>
+      <div class="instr-desc">When you're ready to bat, tap the home plate to begin pitching.</div>
+    </div>
+
+    <div class="instr-panel instr-panel--step2">
+      <div class="instr-step">STEP 2</div>
+      <div class="instr-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+          <polyline points="15 18 9 12 15 6"/>
+          <line x1="9" y1="12" x2="20" y2="12"/>
+          <polyline points="9 6 15 12 9 18" transform="translate(-5 0)"/>
+        </svg>
+      </div>
+      <div class="instr-title">ADJUST PITCH HEIGHT WITH FOOT PEDALS</div>
+      <div class="instr-line"></div>
+      <div class="instr-desc">Use the left and right pedals to adjust pitch height if needed during play.</div>
+    </div>
+
+    <div class="instr-panel instr-panel--safety">
+      <div class="instr-step">WARNING</div>
+      <div class="instr-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="instr-title">BALL WILL LAUNCH TOWARDS THE MIDDLE OF THE PLATE</div>
+      <div class="instr-line"></div>
+      <div class="instr-desc">Stand clear of the pitching machine path. The ball will be directed at the center of the strike zone.</div>
+    </div>
+  </div>
+
+  <div class="transition-bottom">
+    <div class="loading-bar-container">
+      <div class="loading-bar-track">
+        <div class="loading-bar-fill" id="loadingBarFill"></div>
+      </div>
+      <div class="loading-bar-meta">
+        <span class="loading-bar-label" id="loadingBarLabel">CALIBRATING PITCHING MACHINE</span>
+        <span class="loading-bar-pct" id="loadingBarPct">0%</span>
+      </div>
+    </div>
+    <div class="transition-stats-wrap">
+      <div class="transition-stats-title">YOUR SELECTED SETTINGS</div>
+      <div class="transition-stats">
+        <div class="stat-block">
+          <div class="stat-icon stat-icon--diff">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">DIFFICULTY</div>
+            <div class="stat-value" id="transitionDiff">NORMAL</div>
+          </div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-icon stat-icon--speed">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">PITCH SPEED</div>
+            <div class="stat-value" id="transitionSpeed">78<span class="stat-unit">KM/H</span></div>
+          </div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-icon stat-icon--height">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><polyline points="12 19 12 5"/><polyline points="5 12 12 5 19 12"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-label">PITCH HEIGHT</div>
+            <div class="stat-value" id="transitionHeight">5<span class="stat-unit">/ 10</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="transition-start-btn" onclick="startFromTransition()" style="display:none">START</button>
+  </div>
+  <div class="tap-to-start-overlay" id="tapToStartOverlay">
+    <div class="tap-to-start-content">
+      <div class="tap-to-start-text">PRESS ANYWHERE TO START</div>
+      <div class="tap-to-start-sub">Machine ready — tap to begin</div>
+    </div>
+  </div>
+</div>
+
+<div class="pitch-flash" id="pitchFlash">PITCH</div>
+
+<script>
+const modeIllustrations = {
+  game: `<svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="ml1"><stop offset="0%" stop-color="rgba(255,255,255,.35)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs><circle cx="100" cy="40" r="80" fill="url(#ml1)"/><circle cx="300" cy="40" r="80" fill="url(#ml1)"/><path d="M-20 200 A250 250 0 0 1 420 200" stroke="rgba(255,255,255,.5)" stroke-width="2.5" fill="none"/><path d="M200 450 L50 280 A200 200 0 0 1 350 280 Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.5)" stroke-width="2"/><rect x="200" y="300" width="80" height="80" rx="3" transform="rotate(45 200 300)" stroke="rgba(255,255,255,.7)" stroke-width="2.5" fill="rgba(255,255,255,.06)"/><rect x="196" y="368" width="8" height="8" fill="rgba(255,255,255,.9)" transform="rotate(45 200 372)"/><rect x="150" y="296" width="6" height="6" fill="rgba(255,255,255,.8)" transform="rotate(45 153 299)"/><rect x="196" y="258" width="6" height="6" fill="rgba(255,255,255,.8)" transform="rotate(45 199 261)"/><rect x="240" y="296" width="6" height="6" fill="rgba(255,255,255,.8)" transform="rotate(45 243 299)"/><circle cx="200" cy="310" r="5" fill="rgba(255,255,255,.4)" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/><line x1="200" y1="375" x2="50" y2="220" stroke="rgba(255,255,255,.5)" stroke-width="2"/><line x1="200" y1="375" x2="350" y2="220" stroke="rgba(255,255,255,.5)" stroke-width="2"/></svg>`,
+  training: `<svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="ml2"><stop offset="0%" stop-color="rgba(255,255,255,.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs><circle cx="170" cy="230" r="160" fill="url(#ml2)"/><g transform="rotate(-50, 200, 250)"><path d="M 200 35 C 215 35, 226 42, 226 55 L 226 140 C 225 170, 222 200, 218 220 C 214 240, 211 258, 209 275 L 208 310 L 208 345 L 208 378 L 213 385 L 213 405 C 213 410, 210 412, 200 412 C 190 412, 187 410, 187 405 L 187 385 L 192 378 L 192 345 L 192 310 L 191 275 C 189 258, 186 240, 182 220 C 178 200, 175 170, 174 140 L 174 55 C 174 42, 185 35, 200 35 Z" fill="rgba(255,255,255,.7)" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linejoin="round"/><line x1="192" y1="348" x2="208" y2="348" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/><line x1="192" y1="354" x2="208" y2="354" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/><line x1="192" y1="360" x2="208" y2="360" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/><line x1="192" y1="366" x2="208" y2="366" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/><line x1="192" y1="372" x2="208" y2="372" stroke="rgba(100,30,160,.45)" stroke-width="2" stroke-linecap="round"/></g><circle cx="255" cy="380" r="28" fill="rgba(255,255,255,.75)" stroke="rgba(255,255,255,.9)" stroke-width="2"/><path d="M243 356 C248 368 248 392 243 404" stroke="rgba(100,30,160,.5)" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M267 356 C262 368 262 392 267 404" stroke="rgba(100,30,160,.5)" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
+};
+
+const modeConfig = {
+  game: { panelTag:'[ PLAY ]', accent:'GAME', panelClass:'panel--game', rounds:10 },
+  training: { panelTag:'[ DRILLS ]', accent:'SWING', panelClass:'panel--training', rounds:null },
+};
+
+const state = { selectedMode:'training', difficulty:'normal', pitchMode:'manual', isRunning:false, freq:7, speed:78, height:5, ballsThrown:0, ballsReturned:0 };
+
+const presets = {
+  kids:   { freq:12, speed:50,  hint:'Slow, gentle pitches. Great for first-timers learning the basics.' },
+  normal: { freq:7,  speed:78,  hint:'Standard speed and frequency for everyday practice.' },
+  pro:    { freq:4,  speed:130, hint:'Fast, frequent pitches. For experienced batters only.' },
+  custom: { hint:'Custom settings — adjusted from a preset.' },
+};
+
+function switchToCustom() {
+  if (state.difficulty === 'custom') return;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  const customTab = document.getElementById('customTab');
+  if (customTab) customTab.classList.add('active');
+  state.difficulty = 'custom';
+  document.getElementById('modeHint').textContent = presets.custom.hint;
+}
+
+let pitchInterval = null;
+const safetyModes = ['game', 'training'];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function selectMode(mode) {
+  state.selectedMode = mode;
+  const cfg = modeConfig[mode];
+  document.getElementById('screenSettings').dataset.mode = mode;
+  document.getElementById('screenSafety').dataset.safetyMode = mode;
+  const safetyValue = document.getElementById('safetyModeValue');
+  if (safetyValue) safetyValue.textContent = (mode === 'training' ? 'SWING MODE' : mode.toUpperCase() + ' MODE');
+  const lp = document.getElementById('leftPanel');
+  lp.classList.remove('panel--game','panel--training','panel--pitching');
+  lp.classList.add(cfg.panelClass);
+  document.getElementById('pageAccent').textContent = cfg.accent;
+  document.getElementById('panelTag').textContent = cfg.panelTag;
+  document.getElementById('modeIllustration').innerHTML = modeIllustrations[mode];
+  resetSession();
+  updateStatsStrip();
+  resetAcceptBtn();
+
+  if (mode === 'pitching') {
+    // Pitching: skip settings, go straight to safety → transition → session
+    showScreen('screenSafety');
+  } else if (safetyModes.includes(mode)) {
+    showScreen('screenSafety');
+  } else {
+    showScreen('screenSettings');
+  }
+}
+
+function acceptSafety() {
+  if (state.selectedMode === 'pitching') {
+    // Skip settings entirely for pitching, go straight to transition
+    showTransitionScreen();
+  } else {
+    showScreen('screenSettings');
+  }
+}
+
+let holdTimer = null;
+function startHold(e) {
+  if (e) e.preventDefault();
+  const btn = document.getElementById('acceptBtn');
+  const label = document.getElementById('acceptBtnLabel');
+  btn.classList.add('holding');
+  label.textContent = 'HOLD...';
+  holdTimer = setTimeout(() => {
+    btn.classList.add('complete');
+    label.textContent = 'CONFIRMED';
+    setTimeout(() => acceptSafety(), 250);
+  }, 1500);
+}
+function cancelHold() {
+  const btn = document.getElementById('acceptBtn');
+  const label = document.getElementById('acceptBtnLabel');
+  if (btn.classList.contains('complete')) return;
+  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  btn.classList.remove('holding');
+  label.textContent = 'HOLD TO ACKNOWLEDGE';
+}
+function resetAcceptBtn() {
+  const btn = document.getElementById('acceptBtn');
+  const label = document.getElementById('acceptBtnLabel');
+  if (!btn) return;
+  if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+  btn.classList.remove('holding','complete');
+  label.textContent = 'HOLD TO ACKNOWLEDGE';
+}
+
+function acceptSafety() { showScreen('screenSettings'); }
+
+function goBack() {
+  if (state.isRunning) stopTraining();
+  resetSession();
+  showScreen('screenSelect');
+}
+
+function resetSession() {
+  state.ballsThrown = 0; state.ballsReturned = 0;
+  document.getElementById('typoMono').textContent = '[ READY — PRESS START ]';
+  updateStatsStrip();
+}
+
+function pct(v, mn, mx) { return ((v - mn) / (mx - mn)) * 100; }
+
+function bindSlider(id, key) {
+  const inp = document.getElementById(id+'Input');
+  const fill = document.getElementById(id+'Fill');
+  const val = document.getElementById(id+'Val');
+  inp.addEventListener('input', () => {
+    const v = parseInt(inp.value, 10);
+    state[key] = v; val.textContent = v;
+    fill.style.width = pct(v, parseInt(inp.min), parseInt(inp.max))+'%';
+    val.classList.add('flash'); setTimeout(() => val.classList.remove('flash'), 120);
+    if (key === 'freq' && state.isRunning && state.pitchMode === 'auto') restartAuto();
+    switchToCustom();
+    updateStatsStrip();
+  });
+}
+bindSlider('freq','freq'); bindSlider('speed','speed'); bindSlider('height','height');
+
+function updateStatsStrip() {}
+
+function showStatsStrip() {
+  document.getElementById('statsStrip').style.display = 'flex';
+}
+function hideStatsStrip() {
+  document.getElementById('statsStrip').style.display = 'none';
+}
+
+function setSlider(id, key, value) {
+  const inp = document.getElementById(id+'Input');
+  const fill = document.getElementById(id+'Fill');
+  const val = document.getElementById(id+'Val');
+  inp.value = value; state[key] = value; val.textContent = value;
+  fill.style.width = pct(value, parseInt(inp.min), parseInt(inp.max))+'%';
+  updateStatsStrip();
+}
+
+function setDifficulty(el) {
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const mode = el.dataset.mode;
+  state.difficulty = mode;
+  if (mode === 'custom') {
+    document.getElementById('modeHint').textContent = presets.custom.hint;
+    return;
+  }
+  const p = presets[mode];
+  setSlider('freq','freq',p.freq); setSlider('speed','speed',p.speed);
+  document.getElementById('modeHint').textContent = p.hint;
+  if (state.isRunning && state.pitchMode === 'auto') restartAuto();
+}
+
+function setPitchMode(el) {
+  document.querySelectorAll('.pitch-opt').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  state.pitchMode = el.dataset.pitch;
+  document.getElementById('freqGroup').classList.toggle('disabled', state.pitchMode !== 'auto');
+  if (state.isRunning) {
+    if (state.pitchMode === 'auto') restartAuto(); else stopAuto();
+  }
+  updateStatsStrip();
+}
+
+function throwPitch() {
+  if (state.selectedMode === 'game' && state.ballsThrown >= modeConfig.game.rounds) {
+    stopTraining();
+    document.getElementById('typoMono').textContent = `[ GAME OVER — ${state.ballsReturned}/${modeConfig.game.rounds} HITS ]`;
+    return;
+  }
+  state.ballsThrown++;
+  const rc = Math.max(0.3, 0.85 - (state.speed - 78) / 400);
+  const hit = Math.random() < rc;
+  if (hit) state.ballsReturned++;
+
+  if (state.selectedMode === 'game') {
+    const rem = modeConfig.game.rounds - state.ballsThrown;
+    document.getElementById('stat1Val').innerHTML = `${rem}<span class="stat-unit">RDS</span>`;
+    document.getElementById('stat1Label').textContent = 'Rounds Left';
+  } else {
+    document.getElementById('stat1Val').innerHTML = `${state.ballsThrown}<span class="stat-unit">PCS</span>`;
+    document.getElementById('stat1Label').textContent = 'Pitches';
+  }
+  document.getElementById('stat2Val').innerHTML = `${state.ballsReturned}<span class="stat-unit">PCS</span>`;
+  document.getElementById('stat2Label').textContent = state.selectedMode === 'game' ? 'Hits' : 'Returns';
+  const rate = state.ballsThrown > 0 ? Math.round((state.ballsReturned / state.ballsThrown) * 100) : 0;
+  document.getElementById('stat3Val').innerHTML = `${rate}<span class="stat-unit">%</span>`;
+  document.getElementById('stat3Label').textContent = state.selectedMode === 'game' ? 'Hit Rate' : 'Return Rate';
+
+  document.querySelectorAll('.stat-val').forEach(s => { s.classList.add('live'); setTimeout(() => s.classList.remove('live'), 300); });
+
+  const flash = document.getElementById('pitchFlash');
+  flash.textContent = `${state.speed}`;
+  flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show');
+
+  if (state.selectedMode === 'game') {
+    document.getElementById('typoMono').textContent = `[ PITCH ${state.ballsThrown}/${modeConfig.game.rounds} — ${hit ? 'HIT' : 'STRIKE'} ]`;
+    if (state.ballsThrown >= modeConfig.game.rounds) {
+      setTimeout(() => { stopTraining(); document.getElementById('typoMono').textContent = `[ GAME OVER — ${state.ballsReturned}/${modeConfig.game.rounds} HITS ]`; }, 800);
+    }
+  } else {
+    document.getElementById('typoMono').textContent = `[ PITCH #${state.ballsThrown} — ${hit ? 'RETURNED' : 'MISS'} ]`;
+  }
+}
+
+function startAuto() { stopAuto(); pitchInterval = setInterval(throwPitch, state.freq * 1000); }
+function stopAuto() { if (pitchInterval) { clearInterval(pitchInterval); pitchInterval = null; } }
+function restartAuto() { stopAuto(); startAuto(); }
+
+function toggleTraining() {
+  if (!state.isRunning) {
+    showTransitionScreen();
+  } else {
+    stopTraining();
+  }
+}
+
+function showTransitionScreen() {
+  const cfg = modeConfig[state.selectedMode];
+  document.getElementById('transitionMode').textContent = cfg.accent;
+  document.getElementById('transitionDiff').textContent = state.difficulty.toUpperCase();
+  document.getElementById('transitionSpeed').innerHTML = `${state.speed}<span class="stat-unit">KM/H</span>`;
+  document.getElementById('transitionHeight').innerHTML = `${state.height}<span class="stat-unit">/ 10</span>`;
+  showScreen('screenTransition');
+  startLoadingBar();
+}
+
+let loadingInterval = null;
+function startLoadingBar() {
+  cancelLoadingBar();
+  const fill = document.getElementById('loadingBarFill');
+  const pct = document.getElementById('loadingBarPct');
+  const label = document.getElementById('loadingBarLabel');
+  const container = fill.parentElement.parentElement;
+  container.classList.remove('complete');
+  fill.style.width = '0%';
+  pct.textContent = '0%';
+  label.textContent = 'CALIBRATING PITCHING MACHINE';
+
+  let progress = 0;
+  const duration = 3000;
+  const stepMs = 30;
+  const increment = (stepMs / duration) * 100;
+
+  loadingInterval = setInterval(() => {
+    progress += increment;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+      container.classList.add('complete');
+      label.textContent = 'READY';
+      fill.style.width = '100%';
+      pct.textContent = '100%';
+      activateTapToStart();
+    } else if (progress >= 66) {
+      label.textContent = 'WARMING UP MACHINE';
+    } else if (progress >= 33) {
+      label.textContent = 'LOADING BALLS';
+    }
+    fill.style.width = progress + '%';
+    pct.textContent = Math.floor(progress) + '%';
+  }, stepMs);
+}
+
+function cancelLoadingBar() {
+  if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+  deactivateTapToStart();
+}
+
+let tapToStartActive = false;
+function activateTapToStart() {
+  tapToStartActive = true;
+  const banner = document.querySelector('.cta-banner');
+  const text = document.querySelector('.cta-text');
+  if (banner) banner.classList.add('ready');
+  if (text) text.textContent = 'PRESS ANYWHERE TO START';
+}
+function deactivateTapToStart() {
+  tapToStartActive = false;
+  const banner = document.querySelector('.cta-banner');
+  const text = document.querySelector('.cta-text');
+  if (banner) banner.classList.remove('ready');
+  if (text) text.textContent = 'LOADING BASES...';
+}
+function handleTapToStart(e) {
+  if (!tapToStartActive) return;
+  if (e && e.target && e.target.closest('.back-btn')) return;
+  startFromTransition();
+}
+
+function startFromTransition() {
+  cancelLoadingBar();
+  showScreen('screenSettings');
+  startTraining();
+}
+
+function backFromTransition() {
+  cancelLoadingBar();
+  if (state.selectedMode === 'pitching') {
+    showScreen('screenSelect');
+  } else {
+    showScreen('screenSettings');
+  }
+}
+
+function startTraining() {
+  state.isRunning = true;
+  const btn = document.getElementById('startBtn');
+  const lbl = document.getElementById('startLabel');
+  btn.classList.add('running');
+  if (state.pitchMode === 'auto') { startAuto(); }
+  lbl.textContent = 'STOP';
+  document.getElementById('typoMono').textContent = state.selectedMode === 'game' ? '[ GAME ACTIVE ]' : '[ TRAINING ACTIVE ]';
+}
+
+function stopTraining() {
+  state.isRunning = false; stopAuto();
+  document.getElementById('startBtn').classList.remove('running');
+  document.getElementById('startLabel').textContent = 'START';
+}
+
+function updateClocks() {
+  const now = new Date();
+  const t = `SYS // ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  ['clock','clockSafety','clock2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t;
+  });
+}
+updateClocks(); setInterval(updateClocks, 1000);
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && document.getElementById('screenSettings').classList.contains('active')) { e.preventDefault(); toggleTraining(); }
+  if (e.code === 'Escape' && document.getElementById('screenSettings').classList.contains('active')) goBack();
+  if (e.code === 'Enter' && document.getElementById('screenSafety').classList.contains('active') && !holdTimer) {
+    e.preventDefault(); startHold();
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Enter' && document.getElementById('screenSafety').classList.contains('active')) cancelHold();
+});
+
+updateStatsStrip();
+</script>
+</body>
+</html>
